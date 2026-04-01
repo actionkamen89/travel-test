@@ -1,18 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Travel Unlock</title>
+    <title>Travel Map</title>
 </head>
 <body style="text-align:center; font-family:sans-serif;">
-    <h1 id="text">Welcome</h1>
 
-    <script>
-        let params = new URLSearchParams(window.location.search);
-        let state = params.get("state");
+<h1 id="title">Travel Map</h1>
 
-        if(state){
-            document.getElementById("text").innerText = "🎉 " + state + " unlocked!";
-        }
-    </script>
+<svg viewBox="0 0 200 200" style="width:300px;">
+
+    <!-- VERY SIMPLE SAMPLE STATES -->
+    <rect id="goa" x="50" y="120" width="20" height="20" fill="gray"></rect>
+    <rect id="maharashtra" x="40" y="90" width="40" height="30" fill="gray"></rect>
+    <rect id="kerala" x="60" y="150" width="20" height="30" fill="gray"></rect>
+    <rect id="delhi" x="100" y="50" width="20" height="20" fill="gray"></rect>
+
+</svg>
+
+<script>
+let params = new URLSearchParams(window.location.search);
+let state = params.get("state");
+
+// get saved states
+let completed = JSON.parse(localStorage.getItem("states")) || [];
+
+// add new state
+if(state && !completed.includes(state.toLowerCase())){
+    completed.push(state.toLowerCase());
+    localStorage.setItem("states", JSON.stringify(completed));
+}
+
+// highlight states
+completed.forEach(s => {
+    let el = document.getElementById(s);
+    if(el){
+        el.style.fill = "green";
+    }
+});
+
+// update title
+if(state){
+    document.getElementById("title").innerText = "🎉 " + state + " unlocked!";
+}
+</script>
+
 </body>
 </html>

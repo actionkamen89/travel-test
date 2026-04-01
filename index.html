@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Travel Unlock</title>
+</head>
+<body style="text-align:center; font-family:sans-serif;">
+    <h1 id="text">Welcome</h1>
+
+    <script>
+        let params = new URLSearchParams(window.location.search);
+        let state = params.get("state");
+
+        if(state){
+            document.getElementById("text").innerText = "🎉 " + state + " unlocked!";
+        }
+    </script>
+</body>
+</html>

@@ -1,82 +1,145 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>India Travel Map</title>
-    <style>
-        body {
-            text-align: center;
-            font-family: sans-serif;
-            background: #0f172a;
-            color: white;
-        }
-
-        svg path {
-            fill: #374151;
-            stroke: #111;
-            stroke-width: 1;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        svg path.active {
-            fill: #22c55e;
-            transform: scale(1.05);
-        }
-
-        svg path:hover {
-            fill: #60a5fa;
-        }
-
-        h1 {
-            margin-top: 20px;
-        }
-    </style>
-</head>
-
-<body>
-
-<h1 id="title">🇮🇳 Travel Map</h1>
-
-<svg viewBox="0 0 600 700" width="350">
-
-    <!-- REALISTIC STYLE STATES (simplified but map-like) -->
-
-    <path id="maharashtra" d="M200,350 L300,340 L320,400 L220,420 Z"/>
-    <path id="goa" d="M240,420 L260,420 L260,440 L240,440 Z"/>
-    <path id="karnataka" d="M220,420 L300,410 L300,500 L240,520 Z"/>
-    <path id="kerala" d="M260,520 L280,520 L280,620 L260,620 Z"/>
-    <path id="tamilnadu" d="M300,500 L360,500 L360,620 L300,620 Z"/>
-    <path id="delhi" d="M330,200 L350,200 L350,220 L330,220 Z"/>
-    <path id="rajasthan" d="M150,200 L280,190 L260,330 L160,310 Z"/>
-
-</svg>
-
-<script>
-let params = new URLSearchParams(window.location.search);
-let state = params.get("state");
-
-// get stored states
-let completed = JSON.parse(localStorage.getItem("states")) || [];
-
-// add new state
-if(state && !completed.includes(state.toLowerCase())){
-    completed.push(state.toLowerCase());
-    localStorage.setItem("states", JSON.stringify(completed));
-}
-
-// highlight with animation
-completed.forEach(s => {
-    let el = document.getElementById(s);
-    if(el){
-        el.classList.add("active");
+  <title>India Travel Map</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f172a;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      min-height: 100vh;
     }
-});
+    h1 { font-size: 1.6rem; margin: 16px 0 4px; }
+    #subtitle { color: #94a3b8; font-size: 0.85rem; margin-bottom: 12px; }
+    #map-wrap { width: 100%; max-width: 480px; }
+    svg { width: 100%; height: auto; display: block; }
+    .state {
+      fill: #334155;
+      stroke: #0f172a;
+      stroke-width: 1;
+      cursor: pointer;
+      transition: fill 0.3s;
+    }
+    .state:hover { fill: #60a5fa; }
+    .state.active {
+      fill: #22c55e;
+      filter: drop-shadow(0 0 5px #22c55e99);
+    }
+    #toast {
+      margin-top: 14px;
+      padding: 8px 22px;
+      border: 1px solid #22c55e;
+      border-radius: 999px;
+      color: #22c55e;
+      background: #22c55e18;
+      display: none;
+    }
+    #count { margin-top: 8px; color: #64748b; font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+  <h1 id="title">🇮🇳 India Travel Map</h1>
+  <p id="subtitle">Scan a state QR to unlock it</p>
+  <div id="map-wrap">
+    <svg id="india-map" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+  <div id="toast"></div>
+  <div id="count"></div>
 
-// update title
-if(state){
-    document.getElementById("title").innerText = "🎉 " + state + " unlocked!";
-}
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script>
+  const indiaGeo = {"type":"FeatureCollection","features":[
+    {"type":"Feature","id":"andhra-pradesh","properties":{"name":"Andhra Pradesh"},"geometry":{"type":"Polygon","coordinates":[[[79.5,10.3],[80.0,11.0],[80.3,12.5],[80.1,13.5],[80.5,13.9],[81.5,13.7],[82.2,13.2],[83.0,13.4],[84.0,13.9],[84.4,14.8],[84.1,15.5],[83.5,17.5],[83.0,17.9],[82.2,18.2],[81.8,17.5],[81.0,17.0],[80.2,16.3],[79.5,15.7],[78.8,15.5],[78.3,15.0],[77.8,14.5],[77.2,14.0],[77.0,14.3],[76.5,14.5],[76.8,15.2],[77.5,15.7],[78.0,16.0],[78.2,17.0],[79.0,17.2],[79.5,17.0],[80.0,16.5],[80.3,15.8],[80.0,14.5],[79.5,13.5],[79.0,12.5],[78.8,11.5],[79.0,10.5],[79.5,10.3]]]}},
+    {"type":"Feature","id":"arunachal-pradesh","properties":{"name":"Arunachal Pradesh"},"geometry":{"type":"Polygon","coordinates":[[[91.6,27.0],[92.0,27.3],[93.0,27.5],[94.0,28.1],[95.0,28.3],[96.2,28.6],[97.1,28.1],[97.4,27.6],[96.5,27.1],[95.5,26.7],[94.5,26.5],[93.5,26.7],[92.5,26.9],[91.6,27.0]]]}},
+    {"type":"Feature","id":"assam","properties":{"name":"Assam"},"geometry":{"type":"Polygon","coordinates":[[[89.8,26.4],[90.5,26.8],[91.5,26.9],[92.0,26.8],[93.0,26.7],[94.0,26.5],[95.0,26.5],[94.5,25.7],[93.5,25.1],[92.5,24.8],[91.5,24.9],[90.5,25.2],[89.8,25.8],[89.8,26.4]]]}},
+    {"type":"Feature","id":"bihar","properties":{"name":"Bihar"},"geometry":{"type":"Polygon","coordinates":[[[83.4,27.5],[84.5,27.5],[85.5,27.3],[86.5,27.6],[87.5,27.1],[87.0,26.2],[86.5,25.5],[85.5,25.0],[84.5,24.7],[83.5,25.1],[83.0,25.8],[83.4,27.5]]]}},
+    {"type":"Feature","id":"chhattisgarh","properties":{"name":"Chhattisgarh"},"geometry":{"type":"Polygon","coordinates":[[[80.6,22.6],[81.5,23.0],[82.5,23.3],[83.5,23.1],[83.2,22.1],[82.5,21.1],[82.0,20.2],[81.5,19.5],[80.5,20.1],[80.0,21.0],[80.3,22.0],[80.6,22.6]]]}},
+    {"type":"Feature","id":"goa","properties":{"name":"Goa"},"geometry":{"type":"Polygon","coordinates":[[[73.8,15.7],[74.0,15.5],[74.3,15.4],[74.3,15.7],[74.1,15.9],[73.8,15.7]]]}},
+    {"type":"Feature","id":"gujarat","properties":{"name":"Gujarat"},"geometry":{"type":"Polygon","coordinates":[[[68.5,23.6],[69.5,23.1],[70.6,22.6],[71.5,22.2],[72.5,21.6],[73.5,21.2],[73.0,20.5],[72.5,21.0],[72.0,21.5],[71.5,22.0],[70.5,22.5],[70.0,22.0],[69.5,22.5],[69.0,23.0],[68.5,23.6],[68.1,24.5],[68.5,25.2],[69.5,24.8],[70.5,24.2],[71.5,24.1],[72.5,23.7],[73.0,24.1],[72.5,24.6],[71.5,24.7],[70.5,24.6],[70.0,25.2],[70.5,25.6],[71.5,25.7],[72.5,25.2],[73.0,25.6],[72.5,26.1],[72.0,26.6],[71.0,27.0],[70.5,27.5],[70.0,27.0],[69.5,26.5],[69.0,26.0],[68.5,23.6]]]}},
+    {"type":"Feature","id":"haryana","properties":{"name":"Haryana"},"geometry":{"type":"Polygon","coordinates":[[[74.5,30.5],[75.5,30.6],[76.5,30.1],[77.5,30.1],[77.5,29.5],[77.0,29.0],[76.5,28.5],[75.5,28.1],[74.5,28.5],[74.0,29.1],[74.5,30.0],[74.5,30.5]]]}},
+    {"type":"Feature","id":"himachal-pradesh","properties":{"name":"Himachal Pradesh"},"geometry":{"type":"Polygon","coordinates":[[[76.5,32.5],[77.5,33.0],[78.5,33.6],[79.1,33.2],[79.5,32.7],[78.5,31.6],[77.5,31.1],[76.5,31.5],[76.0,32.1],[76.5,32.5]]]}},
+    {"type":"Feature","id":"jharkhand","properties":{"name":"Jharkhand"},"geometry":{"type":"Polygon","coordinates":[[[83.5,25.1],[84.5,24.8],[85.5,25.0],[86.5,25.5],[87.0,26.0],[87.5,25.5],[87.0,24.5],[86.5,24.0],[85.5,23.5],[84.5,23.4],[83.5,23.5],[83.0,24.1],[83.5,25.1]]]}},
+    {"type":"Feature","id":"karnataka","properties":{"name":"Karnataka"},"geometry":{"type":"Polygon","coordinates":[[[74.0,15.5],[74.5,16.1],[75.0,16.6],[76.0,17.1],[77.0,17.6],[78.0,17.6],[78.5,17.1],[78.0,16.1],[77.5,15.5],[77.0,15.1],[76.5,14.6],[75.5,14.1],[74.5,14.1],[74.0,14.5],[73.5,14.1],[73.0,14.6],[73.5,15.1],[74.0,15.5]]]}},
+    {"type":"Feature","id":"kerala","properties":{"name":"Kerala"},"geometry":{"type":"Polygon","coordinates":[[[77.5,8.4],[77.0,8.6],[76.5,9.1],[76.0,9.6],[75.5,10.1],[75.0,10.6],[75.5,11.1],[76.0,11.6],[76.5,12.1],[77.0,12.6],[77.5,12.1],[77.0,11.6],[77.5,11.1],[78.0,10.6],[77.5,10.1],[78.0,9.6],[77.5,8.4]]]}},
+    {"type":"Feature","id":"madhya-pradesh","properties":{"name":"Madhya Pradesh"},"geometry":{"type":"Polygon","coordinates":[[[74.0,24.6],[75.0,25.1],[76.0,25.6],[77.0,26.1],[78.0,26.6],[79.0,26.6],[80.0,26.1],[80.5,25.1],[80.0,24.1],[79.5,23.6],[78.5,23.1],[77.5,22.6],[76.5,22.6],[75.5,22.6],[74.5,23.1],[74.0,23.6],[74.0,24.6]]]}},
+    {"type":"Feature","id":"maharashtra","properties":{"name":"Maharashtra"},"geometry":{"type":"Polygon","coordinates":[[[73.0,20.6],[74.0,21.1],[75.0,21.6],[76.0,21.6],[77.0,21.6],[78.0,22.1],[79.0,22.1],[79.5,21.6],[79.5,20.6],[79.0,19.6],[78.5,19.1],[78.0,18.6],[77.5,18.1],[77.0,17.6],[76.0,17.1],[75.0,16.6],[74.5,16.1],[74.0,15.6],[73.5,15.1],[73.0,15.6],[72.5,16.6],[72.5,17.6],[73.0,18.6],[73.0,19.6],[73.0,20.6]]]}},
+    {"type":"Feature","id":"manipur","properties":{"name":"Manipur"},"geometry":{"type":"Polygon","coordinates":[[[93.5,25.5],[94.1,25.1],[94.6,24.6],[93.5,24.1],[93.1,24.6],[93.0,25.1],[93.5,25.5]]]}},
+    {"type":"Feature","id":"meghalaya","properties":{"name":"Meghalaya"},"geometry":{"type":"Polygon","coordinates":[[[89.8,25.5],[90.5,25.9],[91.5,25.6],[92.1,25.1],[91.5,24.9],[90.5,24.8],[89.8,25.1],[89.8,25.5]]]}},
+    {"type":"Feature","id":"mizoram","properties":{"name":"Mizoram"},"geometry":{"type":"Polygon","coordinates":[[[92.5,24.1],[93.1,24.6],[93.5,24.1],[93.1,23.1],[92.5,22.6],[92.1,23.1],[92.5,24.1]]]}},
+    {"type":"Feature","id":"nagaland","properties":{"name":"Nagaland"},"geometry":{"type":"Polygon","coordinates":[[[93.5,26.5],[94.6,26.5],[95.1,26.1],[94.5,25.6],[94.1,25.1],[93.5,25.5],[93.1,26.1],[93.5,26.5]]]}},
+    {"type":"Feature","id":"odisha","properties":{"name":"Odisha"},"geometry":{"type":"Polygon","coordinates":[[[83.5,22.1],[84.5,22.6],[85.5,22.6],[86.5,22.1],[87.1,21.6],[87.1,20.6],[86.5,20.1],[85.5,19.6],[84.5,19.5],[83.5,20.1],[83.1,20.6],[83.0,21.1],[82.5,21.6],[83.5,22.1]]]}},
+    {"type":"Feature","id":"punjab","properties":{"name":"Punjab"},"geometry":{"type":"Polygon","coordinates":[[[73.5,31.5],[74.5,32.1],[75.5,32.1],[76.5,31.6],[76.5,30.6],[76.0,30.1],[75.5,30.1],[74.5,30.6],[74.0,30.6],[73.5,31.1],[73.5,31.5]]]}},
+    {"type":"Feature","id":"rajasthan","properties":{"name":"Rajasthan"},"geometry":{"type":"Polygon","coordinates":[[[69.5,26.6],[70.0,27.1],[70.5,27.6],[71.0,27.1],[72.0,26.6],[72.5,26.1],[73.0,25.6],[74.5,25.1],[75.5,25.6],[76.5,26.1],[77.5,27.1],[77.6,28.0],[77.0,28.5],[76.5,28.5],[75.5,28.1],[74.5,28.5],[74.0,29.1],[74.5,30.1],[74.5,30.6],[74.0,30.6],[73.5,30.1],[73.0,29.6],[72.5,29.1],[72.0,28.6],[71.5,28.1],[71.0,27.6],[70.5,27.6],[70.0,27.1],[69.5,26.6]]]}},
+    {"type":"Feature","id":"sikkim","properties":{"name":"Sikkim"},"geometry":{"type":"Polygon","coordinates":[[[88.0,27.6],[88.5,28.1],[89.1,27.6],[88.5,27.1],[88.0,27.6]]]}},
+    {"type":"Feature","id":"tamil-nadu","properties":{"name":"Tamil Nadu"},"geometry":{"type":"Polygon","coordinates":[[[77.5,8.4],[78.1,9.6],[77.5,10.1],[78.1,10.6],[77.5,11.1],[77.0,11.6],[77.5,12.1],[78.0,12.6],[79.0,13.1],[80.1,13.5],[80.5,13.9],[80.0,12.6],[79.5,11.6],[79.1,11.1],[79.5,10.6],[80.1,9.6],[80.1,8.6],[79.5,8.1],[79.0,8.3],[78.5,8.6],[78.1,8.1],[77.5,8.4]]]}},
+    {"type":"Feature","id":"telangana","properties":{"name":"Telangana"},"geometry":{"type":"Polygon","coordinates":[[[78.0,17.6],[79.0,18.1],[80.0,18.6],[80.5,18.1],[80.5,17.1],[80.0,16.6],[79.5,16.1],[78.5,16.1],[78.0,16.6],[77.5,17.1],[78.0,17.6]]]}},
+    {"type":"Feature","id":"tripura","properties":{"name":"Tripura"},"geometry":{"type":"Polygon","coordinates":[[[91.5,23.5],[92.1,24.1],[92.5,24.1],[92.5,23.5],[92.1,23.1],[91.5,23.5]]]}},
+    {"type":"Feature","id":"uttar-pradesh","properties":{"name":"Uttar Pradesh"},"geometry":{"type":"Polygon","coordinates":[[[77.5,30.1],[78.5,30.6],[79.5,30.1],[80.5,30.1],[81.5,29.6],[82.5,29.1],[83.5,27.6],[83.0,27.1],[82.0,26.6],[81.0,26.1],[80.0,25.6],[79.0,25.1],[78.0,25.1],[77.5,25.6],[77.0,26.6],[77.0,27.6],[77.5,28.6],[77.5,30.1]]]}},
+    {"type":"Feature","id":"uttarakhand","properties":{"name":"Uttarakhand"},"geometry":{"type":"Polygon","coordinates":[[[78.5,30.5],[79.5,31.1],[80.5,31.1],[81.1,30.5],[80.5,30.1],[79.5,30.1],[78.5,30.1],[78.5,30.5]]]}},
+    {"type":"Feature","id":"west-bengal","properties":{"name":"West Bengal"},"geometry":{"type":"Polygon","coordinates":[[[88.0,27.6],[88.5,27.1],[88.5,26.1],[88.5,25.1],[88.0,24.1],[87.5,23.5],[87.1,22.6],[87.1,21.6],[86.5,22.1],[85.5,22.6],[84.5,22.6],[84.0,23.1],[84.5,24.1],[85.1,24.5],[86.1,25.1],[86.5,25.6],[87.1,26.1],[87.5,27.1],[88.0,27.6]]]}},
+    {"type":"Feature","id":"delhi","properties":{"name":"Delhi"},"geometry":{"type":"Polygon","coordinates":[[[76.9,28.9],[77.2,29.0],[77.5,28.9],[77.4,28.5],[77.1,28.4],[76.9,28.6],[76.9,28.9]]]}},
+    {"type":"Feature","id":"jammu-kashmir","properties":{"name":"Jammu & Kashmir"},"geometry":{"type":"Polygon","coordinates":[[[73.5,36.5],[74.5,37.1],[75.5,37.3],[76.5,37.1],[77.5,36.6],[78.5,36.1],[78.5,35.1],[78.0,34.1],[77.0,33.6],[76.0,33.1],[75.0,33.6],[74.5,34.1],[74.0,34.6],[73.5,35.6],[73.5,36.5]]]}},
+    {"type":"Feature","id":"ladakh","properties":{"name":"Ladakh"},"geometry":{"type":"Polygon","coordinates":[[[76.5,34.5],[77.5,35.5],[78.5,36.1],[79.5,35.6],[80.5,35.1],[81.1,34.5],[80.5,34.1],[79.5,33.5],[78.5,33.5],[77.5,34.1],[76.5,34.5]]]}},
+    {"type":"Feature","id":"andaman-nicobar","properties":{"name":"Andaman & Nicobar"},"geometry":{"type":"Polygon","coordinates":[[[92.5,13.1],[92.8,13.6],[93.1,13.1],[92.8,12.6],[92.5,13.1]]]}},
+    {"type":"Feature","id":"chandigarh","properties":{"name":"Chandigarh"},"geometry":{"type":"Polygon","coordinates":[[[76.7,30.75],[76.8,30.82],[76.9,30.75],[76.8,30.67],[76.7,30.75]]]}},
+    {"type":"Feature","id":"puducherry","properties":{"name":"Puducherry"},"geometry":{"type":"Polygon","coordinates":[[[79.82,11.92],[79.92,11.98],[80.01,11.92],[79.92,11.85],[79.82,11.92]]]}},
+    {"type":"Feature","id":"lakshadweep","properties":{"name":"Lakshadweep"},"geometry":{"type":"Polygon","coordinates":[[[72.62,10.55],[72.72,10.62],[72.82,10.55],[72.72,10.47],[72.62,10.55]]]}}
+  ]};
 
+  const aliases = {
+    "andhra pradesh":"andhra-pradesh","arunachal pradesh":"arunachal-pradesh",
+    "assam":"assam","bihar":"bihar","chhattisgarh":"chhattisgarh","goa":"goa",
+    "gujarat":"gujarat","haryana":"haryana","himachal pradesh":"himachal-pradesh",
+    "jharkhand":"jharkhand","karnataka":"karnataka","kerala":"kerala",
+    "madhya pradesh":"madhya-pradesh","maharashtra":"maharashtra","manipur":"manipur",
+    "meghalaya":"meghalaya","mizoram":"mizoram","nagaland":"nagaland","odisha":"odisha",
+    "punjab":"punjab","rajasthan":"rajasthan","sikkim":"sikkim",
+    "tamil nadu":"tamil-nadu","tamilnadu":"tamil-nadu","telangana":"telangana",
+    "tripura":"tripura","uttar pradesh":"uttar-pradesh","uttarakhand":"uttarakhand",
+    "west bengal":"west-bengal","delhi":"delhi","jammu and kashmir":"jammu-kashmir",
+    "jammu kashmir":"jammu-kashmir","ladakh":"ladakh",
+    "andaman and nicobar":"andaman-nicobar","chandigarh":"chandigarh",
+    "puducherry":"puducherry","pondicherry":"puducherry","lakshadweep":"lakshadweep"
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get("state") ? params.get("state").toLowerCase().trim() : null;
+  const scannedId = raw ? (aliases[raw] || raw.replace(/\s+/g,"-")) : null;
+
+  let completed = JSON.parse(localStorage.getItem("india_travel") || "[]");
+  if (scannedId && !completed.includes(scannedId)) {
+    completed.push(scannedId);
+    localStorage.setItem("india_travel", JSON.stringify(completed));
+  }
+
+  const W = 480, H = 560;
+  const svg = d3.select("#india-map").attr("viewBox",`0 0 ${W} ${H}`);
+  const proj = d3.geoMercator().center([82.5,22]).scale(800).translate([W/2,H/2]);
+  const path = d3.geoPath().projection(proj);
+
+  svg.selectAll(".state")
+    .data(indiaGeo.features)
+    .enter().append("path")
+    .attr("class", d => "state"+(completed.includes(d.id)?" active":""))
+    .attr("d", path)
+    .append("title").text(d => d.properties.name);
+
+  if (scannedId) {
+    const feat = indiaGeo.features.find(f=>f.id===scannedId);
+    const name = feat ? feat.properties.name : raw;
+    document.getElementById("title").textContent = "🎉 "+name+" unlocked!";
+    const t = document.getElementById("toast");
+    t.textContent = "✅ "+name+" added to your map!";
+    t.style.display = "inline-block";
+  }
+  document.getElementById("count").textContent = completed.length+" / 36 states & UTs visited";
+  </script>
 </body>
 </html>

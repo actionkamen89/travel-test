@@ -1,43 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>India Travel Map</title>
+    <title>Map Test</title>
 </head>
-<body style="text-align:center; font-family:sans-serif;">
+<body style="text-align:center;">
 
-<h1 id="title">🇮🇳 Travel Map</h1>
+<h1>India Map Test</h1>
 
-<svg viewBox="0 0 500 500" style="width:300px; border:1px solid black;">
+<svg viewBox="0 0 500 500" style="width:300px; border:2px solid black;">
 
-    <!-- STATES -->
     <rect id="maharashtra" x="100" y="200" width="80" height="60" fill="gray"></rect>
     <rect id="goa" x="120" y="270" width="20" height="20" fill="gray"></rect>
     <rect id="kerala" x="150" y="320" width="30" height="60" fill="gray"></rect>
 
 </svg>
-
-<script>
-let params = new URLSearchParams(window.location.search);
-let state = params.get("state");
-
-let completed = JSON.parse(localStorage.getItem("states")) || [];
-
-if(state && !completed.includes(state.toLowerCase())){
-    completed.push(state.toLowerCase());
-    localStorage.setItem("states", JSON.stringify(completed));
-}
-
-completed.forEach(s => {
-    let el = document.getElementById(s);
-    if(el){
-        el.style.fill = "green";
-    }
-});
-
-if(state){
-    document.getElementById("title").innerText = "🎉 " + state + " unlocked!";
-}
-</script>
 
 </body>
 </html>

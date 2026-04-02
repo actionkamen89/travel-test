@@ -1,19 +1,82 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Map Test</title>
+    <title>India Travel Map</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: sans-serif;
+            background: #0f172a;
+            color: white;
+        }
+
+        svg path {
+            fill: #374151;
+            stroke: #111;
+            stroke-width: 1;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        svg path.active {
+            fill: #22c55e;
+            transform: scale(1.05);
+        }
+
+        svg path:hover {
+            fill: #60a5fa;
+        }
+
+        h1 {
+            margin-top: 20px;
+        }
+    </style>
 </head>
-<body style="text-align:center;">
 
-<h1>India Map Test</h1>
+<body>
 
-<svg viewBox="0 0 500 500" style="width:300px; border:2px solid black;">
+<h1 id="title">🇮🇳 Travel Map</h1>
 
-    <rect id="maharashtra" x="100" y="200" width="80" height="60" fill="gray"></rect>
-    <rect id="goa" x="120" y="270" width="20" height="20" fill="gray"></rect>
-    <rect id="kerala" x="150" y="320" width="30" height="60" fill="gray"></rect>
+<svg viewBox="0 0 600 700" width="350">
+
+    <!-- REALISTIC STYLE STATES (simplified but map-like) -->
+
+    <path id="maharashtra" d="M200,350 L300,340 L320,400 L220,420 Z"/>
+    <path id="goa" d="M240,420 L260,420 L260,440 L240,440 Z"/>
+    <path id="karnataka" d="M220,420 L300,410 L300,500 L240,520 Z"/>
+    <path id="kerala" d="M260,520 L280,520 L280,620 L260,620 Z"/>
+    <path id="tamilnadu" d="M300,500 L360,500 L360,620 L300,620 Z"/>
+    <path id="delhi" d="M330,200 L350,200 L350,220 L330,220 Z"/>
+    <path id="rajasthan" d="M150,200 L280,190 L260,330 L160,310 Z"/>
 
 </svg>
+
+<script>
+let params = new URLSearchParams(window.location.search);
+let state = params.get("state");
+
+// get stored states
+let completed = JSON.parse(localStorage.getItem("states")) || [];
+
+// add new state
+if(state && !completed.includes(state.toLowerCase())){
+    completed.push(state.toLowerCase());
+    localStorage.setItem("states", JSON.stringify(completed));
+}
+
+// highlight with animation
+completed.forEach(s => {
+    let el = document.getElementById(s);
+    if(el){
+        el.classList.add("active");
+    }
+});
+
+// update title
+if(state){
+    document.getElementById("title").innerText = "🎉 " + state + " unlocked!";
+}
+</script>
 
 </body>
 </html>
